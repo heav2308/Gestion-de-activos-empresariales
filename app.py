@@ -1,94 +1,50 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, request, jsonify
 import psycopg2
+from psycopg2 import Error
 
 app = Flask(__name__)
 
-# Conexión a la base de datos PostgreSQL
-def connect_postgres():
-    conn = psycopg2.connect(
-        dbname="Ejercicio Gestión de Activos Empresariales",
-        user="postgres",
-        password="1234",
-        host="localhost",
-        port="5432"
-    )
-    return conn
+# Configura la conexión a la base de datos
+conn = psycopg2.connect(
+    dbname="nombre_de_tu_base_de_datos",
+    user="tu_usuario",
+    password="tu_contraseña",
+    host="localhost"
+)
+conn.autocommit = True  # Habilita el modo de autocommit para las transacciones
 
-# Función para obtener todas las tablas de la base de datos
-def get_tables():
-    conn = connect_postgres()
-    cursor = conn.cursor()
-    cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")
-    tables = cursor.fetchall()
-    conn.close()
-    return [table[0] for table in tables]
-
-# Función para obtener datos de una tabla específica
-def get_table_data(table_name):
-    conn = connect_postgres()
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM {table_name}")
-    data = cursor.fetchall()
-    cursor.execute(f"SELECT column_name FROM information_schema.columns WHERE table_name='{table_name}'")
-    columns = cursor.fetchall()
-    conn.close()
-    return data, [column[0] for column in columns]
-
-# Ruta para mostrar la lista de tablas
-@app.route('/')
-def index():
-    tables = get_tables()
-    return render_template('index.html', tables=tables)
-
-# Ruta para mostrar los datos de una tabla específica
-@app.route('/table/<table_name>')
-def table(table_name):
-    data, columns = get_table_data(table_name)
-    return render_template('table.html', table_name=table_name, data=data, columns=columns)
-
-# Ruta para crear un nuevo registro
-@app.route('/table/<table_name>/create', methods=['GET', 'POST'])
-def create(table_name):
-    if request.method == 'POST':
-        conn = connect_postgres()
-        cursor = conn.cursor()
-        columns = ', '.join(request.form.keys())
-        values = ', '.join([f"%({key})s" for key in request.form.keys()])
-        sql = f"INSERT INTO {table_name} ({columns}) VALUES ({values})"
-        cursor.execute(sql, request.form)
-        conn.commit()
-        conn.close()
-        return redirect(url_for('table', table_name=table_name))
-    _, columns = get_table_data(table_name)
-    return render_template('create.html', table_name=table_name, columns=columns)
-
-# Ruta para actualizar un registro existente
-@app.route('/table/<table_name>/update/<int:id>', methods=['GET', 'POST'])
+# Ruta para actualizar un registro en la tabla especificada
+@app.route('/update/<table_name>/<int:id>', methods=['PUT'])
 def update(table_name, id):
-    conn = connect_postgres()
-    cursor = conn.cursor()
-    if request.method == 'POST':
-        updates = ', '.join([f"{key}=%({key})s" for key in request.form.keys()])
-        sql = f"UPDATE {table_name} SET {updates} WHERE id={id}"
-        cursor.execute(sql, request.form)
-        conn.commit()
-        conn.close()
-        return redirect(url_for('table', table_name=table_name))
-    cursor.execute(f"SELECT * FROM {table_name} WHERE id={id}")
-    record = cursor.fetchone()
-    _, columns = get_table_data(table_name)
-    conn.close()
-    return render_template('update.html', table_name=table_name, record=record, columns=columns)
+    try:
+        # Crea un cursor para ejecutar consultas
+        cursor = conn.cursor()
 
-# Ruta para eliminar un registro
-@app.route('/table/<table_name>/delete/<int:id>')
-def delete(table_name, id):
-    conn = connect_postgres()
-    cursor = conn.cursor()
-    cursor.execute(f"DELETE FROM {table_name} WHERE id={id}")
-    conn.commit()
-    conn.close()
-    return redirect(url_for('table', table_name=table_name))
+        # Construye la consulta SQL para seleccionar el registro por su ID
+        cursor.execute(f"SELECT * FROM {table_name} WHERE {table_name}id=%s", (id,))
+        
+        # Obtén el resultado de la consulta
+        record = cursor.fetchone()
+
+        if record is None:
+            return jsonify({'message': 'No se encontró el registro'}), 404
+
+        # Aquí podrías manejar la lógica para actualizar el registro
+        # Por ejemplo, puedes obtener datos de request.json y ejecutar UPDATE
+
+        # Cierra el cursor y confirma los cambios en la base de datos
+        cursor.close()
+        
+        return jsonify({'message': 'Registro actualizado correctamente'}), 200
+    
+    except Error as e:
+        # Manejo de errores de psycopg2
+        return jsonify({'error': str(e)}), 500
+    
+    finally:
+        # Asegúrate de cerrar la conexión al finalizar la operación
+        if conn is not None:
+            conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
