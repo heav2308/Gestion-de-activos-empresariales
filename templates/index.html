@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Lista de Tablas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Lista de Tablas</h1>
+    <ul>
+        {% for table in tables %}
+        <li><a href="{{ url_for('table', table_name=table) }}">{{ table }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

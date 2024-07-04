@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear nuevo registro en {{ table_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Crear nuevo registro en {{ table_name }}</h1>
+    <form method="POST">
+        {% for column in columns %}
+        <label for="{{ column }}">{{ column }}</label>
+        <input type="text" id="{{ column }}" name="{{ column }}">
+        {% endfor %}
+        <button type="submit">Crear</button>
+    </form>
+    <a href="{{ url_for('table', table_name=table_name) }}">Volver</a>
+</body>
+</html>

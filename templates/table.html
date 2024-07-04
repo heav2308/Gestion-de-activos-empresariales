@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tabla {{ table_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Tabla: {{ table_name }}</h1>
+    <a href="{{ url_for('create', table_name=table_name) }}">Crear nuevo registro</a>
+    <table>
+        <thead>
+            <tr>
+                {% for column in columns %}
+                <th>{{ column }}</th>
+                {% endfor %}
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in data %}
+            <tr>
+                {% for item in row %}
+                <td>{{ item }}</td>
+                {% endfor %}
+                <td>
+                    <a href="{{ url_for('update', table_name=table_name, id=row[0]) }}">Editar</a>
+                    <a href="{{ url_for('delete', table_name=table_name, id=row[0]) }}">Eliminar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{{ url_for('index') }}">Volver a la lista de tablas</a>
+</body>
+</html>
